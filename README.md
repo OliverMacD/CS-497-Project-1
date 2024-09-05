@@ -10,6 +10,6 @@ This project train the MobileNetV2 model using TensorFlow on two image datasets 
 ## Justification of Results
 
 # Related Class
-This project was done for the CS497 Fall 2024 class at Boise State University under Dr. Hasan.
+This project was done for the CS497 Fall 2024 class at Boise State University under Dr. Omiya Hassan. It was the first group project for the semester.
 
 # Resources
