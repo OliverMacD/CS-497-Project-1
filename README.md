@@ -12,4 +12,14 @@ This project train the MobileNetV2 model using TensorFlow on two image datasets 
 # Related Class
 This project was done for the CS497 Fall 2024 class at Boise State University under Dr. Hasan.
 
+**Team Name:** NaN
+
+**Team Members:**
+
+[<img alt="Profile Image for cdagher" src="https://github.com/{{cdagher}}.png" width="60px;"/><br /><sub><ahref="https://github.com/{{cdagher}}">{{cdagher}}</a></sub>](https://github.com/{{cdagher}})
+Chris Dagher, Computational PhD, Boise State University
+
+[<img alt="Profile Image for OliverMacD" src="https://github.com/{{cdagher}}.png" width="60px;"/><br /><sub><ahref="https://github.com/{{cdagher}}">{{cdagher}}</a></sub>](https://github.com/{{cdagher}})
+Oliver MacDonald, Engineering BS, Boise State University
+
 # Resources
