@@ -1,5 +1,5 @@
 # CS497 Project 1
-This project train the MobileNetV2 model using TensorFlow on two image datasets to evaluate which dataset the model performs better on and provide a justification based on the model's architecture and the nature of the datasets.
+This project train the MobileNetV2 model using TensorFlow on two image datasets to evaluate which dataset the model performs better on and provide a justification based on the model's architecture and the nature of the datasets. To make this project more challenging, our team decided to build MobilNetV2 in Jax W/ Equinox and then build a translator from Jax/ Equinox to Tensorflow and finally down to Tensorflow light.
 
 # Report Summary
 
