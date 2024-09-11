@@ -19,3 +19,5 @@ This project was done for the CS497 Fall 2024 class at Boise State University un
 - Oliver MacDonald, Engineering BS, Boise State University
 
 # Resources
+
+- List of available [Tensorflow Datasets](https://www.tensorflow.org/datasets/catalog/overview)
