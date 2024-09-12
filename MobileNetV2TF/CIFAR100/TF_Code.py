@@ -10,6 +10,25 @@ from sklearn.metrics import confusion_matrix
 
 filename = f'output{datetime.datetime.now()}'
 
+def save_model(model, filepath: str = "", name: str | None = None):
+    '''
+    Save the model to a file
+    
+    :param model: The model to serialize
+    :param filepath: The path to save the model to
+    :param name: The name of the file to save the model to
+
+    :return: None
+
+    See [reference](https://www.tensorflow.org/guide/keras/serialization_and_saving) for more information
+    '''
+    if name is None:
+        name = ""
+        today = str(datetime.datetime.now().date())
+        time = str(datetime.datetime.now().time()).split(".")[0].replace(":", "-")
+        name = f"model_{today}_{time}.keras"
+    model.save(filepath + name)
+
 f = open(filename, "a")
 
 gpus = tf.config.list_physical_devices('GPU')
@@ -84,6 +103,9 @@ print(f"Test Accuracy: {test_accuracy * 100:.5f}%\n")
 f.write(f"Test Accuracy: {test_accuracy * 100:.5f}%\n")
 print(f"Test Loss: {test_loss:.5f}%\n")
 f.write(f"Test Loss: {test_loss:.5f}%\n")
+
+print("Saving model\n")
+save_model(model)    
 
 f.write(f'Starting Prediction\n')
 f.write(f'Start Time: {datetime.datetime.now()}\n')
