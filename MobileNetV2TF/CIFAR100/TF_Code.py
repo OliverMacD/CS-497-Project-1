@@ -7,9 +7,17 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow_datasets as tfds
 
+# gpus = tf.config.list_physical_devices('GPU')
+# if gpus:
+#     try:
+#         for gpu in gpus:
+#             tf.config.experimental.set_memory_growth(gpu, True)
+#     except RuntimeError as e:
+#         print(e)
+
 # Load the MNIST dataset
 (ds_train, ds_test), ds_info = tfds.load(
-    'mnist',
+    'malaria',
     split=['train', 'test'],
     shuffle_files=True,
     as_supervised=True,
@@ -21,7 +29,7 @@ def normalize_img(image, label):
   return tf.cast(image, tf.float32) / 255., label
 
 def reshape_img(image, label):
-  return tf.reshape(image, (224, 224, 1)), label
+  return tf.reshape(image, (224, 224, 3)), label
 
 def resize_img(image, label):
   return tf.image.resize(image, (224, 224)), label
@@ -34,7 +42,7 @@ ds_train = ds_train.map(
     normalize_img, num_parallel_calls=tf.data.AUTOTUNE)
 ds_train = ds_train.cache()
 ds_train = ds_train.shuffle(ds_info.splits['train'].num_examples)
-ds_train = ds_train.batch(32) ############################################## Batch sizes
+ds_train = ds_train.batch(8) ############################################## Batch sizes
 ds_train = ds_train.prefetch(tf.data.AUTOTUNE)
 
 ds_test = ds_test.map(
@@ -43,18 +51,18 @@ ds_test = ds_test.map(
     reshape_img, num_parallel_calls=tf.data.AUTOTUNE)
 ds_test = ds_test.map(
     normalize_img, num_parallel_calls=tf.data.AUTOTUNE)
-ds_test = ds_test.batch(32)
+ds_test = ds_test.batch(8)
 ds_test = ds_test.cache()
 ds_test = ds_test.prefetch(tf.data.AUTOTUNE)
 
 model = keras.applications.MobileNetV2(
-    input_shape=(224, 224, 1),
+    input_shape=(224, 224, 3),
     alpha=1.0,
     include_top=True,
     weights=None,
     input_tensor=None,
     pooling=None,
-    classes=1000,
+    classes=2,
     classifier_activation='softmax'
 )
 
