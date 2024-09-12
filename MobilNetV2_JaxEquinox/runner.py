@@ -33,10 +33,17 @@ def loss(
     pred_y, state = batch_model(x, state)
     return cross_entropy(y, pred_y), state
 
+@eqx.filter_jit
+def inference_loss(
+    model: MobileNetV2, x: Float[Array, "batch 3 224 224"], y: Int[Array, " batch"]
+):
+    pred_y, _ = jax.vmap(model)(x)
+    return cross_entropy(y, pred_y)
+
 def cross_entropy(
     y: Int[Array, "batch"], pred_y: Float[Array, "batch 100"]
 ) -> Float[Array, ""]:
-    # y are the true targets, and should be integers 0-9.
+    # y are the true targets, and should be integers 0-99.
     # pred_y are the log-softmax'd predictions.
     pred_y = jnp.take_along_axis(pred_y, jnp.expand_dims(y, 1), axis=1).squeeze()
     return -jnp.mean(pred_y)
@@ -59,16 +66,34 @@ def evaluate(model: MobileNetV2, state, testloader: torch.utils.data.DataLoader)
     """This function evaluates the model on the test dataset,
     computing both the average loss and the average accuracy.
     """
+    inference_model = eqx.nn.inference_mode(model)
+    inference_model = eqx.Partial(inference_model, state=state)
+
     avg_loss = 0
     avg_acc = 0
+    x_s = []
+    y_s = []
     for x, y in testloader:
         x = x.numpy()
+        x_s.append(x)
         y = y.numpy()
-        # Note that all the JAX operations happen inside `loss` and `compute_accuracy`,
-        # and both have JIT wrappers, so this is fast.
-        l, _ = loss(model, state, x, y)
-        avg_loss += l
-        avg_acc += compute_accuracy(model, state, x, y)
+        y_s.append(y)
+    
+    @eqx.debug.assert_max_traces(max_traces=1)
+    def body_fn(i, carry):
+        # print("compiling body_fn")
+        l, a, x, y = carry
+        l = l + inference_loss(inference_model, x[i], y[i])
+        a = a + compute_accuracy(model, state, x[i], y[i])
+        return (l, a, x, y)
+    
+    if x_s[-1].shape[0] < testloader.batch_size:
+        avg_loss, avg_acc, _, _ = jax.lax.fori_loop(0, len(x_s) - 1, body_fn, (0., 0., jnp.array(x_s[:-1]), jnp.array(y_s[:-1])))
+        avg_loss += inference_loss(inference_model, x_s[-1], y_s[-1])
+        avg_acc += compute_accuracy(model, state, x_s[-1], y_s[-1])
+    else:
+        avg_loss, avg_acc, _, _ = jax.lax.fori_loop(0, len(x_s), body_fn, (0., 0., jnp.array(x_s), jnp.array(y_s)))
+    
     return avg_loss / len(testloader), avg_acc / len(testloader)
 
 def train(
@@ -104,9 +129,9 @@ def train(
         
         model, state, opt_state, loss_value = make_step(model, state, opt_state, x, y)
         if step % print_every == 0 or step == n_epochs - 1:
-            # val_loss, val_accuracy = evaluate(model, state, valloader)
+            val_loss, val_accuracy = evaluate(model, state, valloader)
             print(f"Step {step}, Loss: {loss_value:.5e}")
-            # print(f"\tVal Loss: {val_loss}, Val Accuracy: {val_accuracy}")
+            print(f"\tVal Loss: {val_loss:.5e}, Val Accuracy: {val_accuracy:.3f}")
 
     return model, state
 
@@ -117,7 +142,7 @@ if __name__ == '__main__':
     N_CLASSES = 100
     BATCH_SIZE = 32
     N_EPOCHS = 25
-    PRINT_EVERY = 1
+    PRINT_EVERY = 5
     SEED = 42
     hyperparams = {
         "learning_rate": LEARNING_RATE,
