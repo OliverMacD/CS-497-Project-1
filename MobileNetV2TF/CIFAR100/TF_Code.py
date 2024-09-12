@@ -1,59 +1,51 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
-from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow_datasets as tfds
+import datetime
+import numpy as np
+from sklearn.metrics import confusion_matrix
 
-# gpus = tf.config.list_physical_devices('GPU')
-# if gpus:
-#     try:
-#         for gpu in gpus:
-#             tf.config.experimental.set_memory_growth(gpu, True)
-#     except RuntimeError as e:
-#         print(e)
+filename = f'output{datetime.datetime.now()}'
+
+f = open(filename, "a")
+
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
 
 # Load the MNIST dataset
 (ds_train, ds_test), ds_info = tfds.load(
-    'malaria',
-    split=['train', 'test'],
+    'food101',
+    split=['train', 'validation'],
     shuffle_files=True,
     as_supervised=True,
     with_info=True,
 )
 
-def normalize_img(image, label):
-  """Normalizes images: `uint8` -> `float32`."""
-  return tf.cast(image, tf.float32) / 255., label
+preprocess_input = tf.keras.applications.mobilenet_v2.preprocess_input
 
-def reshape_img(image, label):
-  return tf.reshape(image, (224, 224, 3)), label
+def preprocess_mobilenet(image, label):
+    image = tf.cast(image, tf.float32)
+    image = preprocess_input(image)  # Apply MobileNetV2-specific preprocessing
+    return image, label
 
 def resize_img(image, label):
-  return tf.image.resize(image, (224, 224)), label
+    return tf.image.resize(image, (224, 224)), label
 
-ds_train = ds_train.map(
-    resize_img, num_parallel_calls=tf.data.AUTOTUNE)
-ds_train = ds_train.map(
-  reshape_img, num_parallel_calls=tf.data.AUTOTUNE)
-ds_train = ds_train.map(
-    normalize_img, num_parallel_calls=tf.data.AUTOTUNE)
-ds_train = ds_train.cache()
-ds_train = ds_train.shuffle(ds_info.splits['train'].num_examples)
-ds_train = ds_train.batch(8) ############################################## Batch sizes
-ds_train = ds_train.prefetch(tf.data.AUTOTUNE)
+ds_train = ds_train.map(preprocess_mobilenet)
+ds_train = ds_train.map(resize_img)
+ds_test = ds_test.map(preprocess_mobilenet)
+ds_test = ds_test.map(resize_img)
 
-ds_test = ds_test.map(
-    resize_img, num_parallel_calls=tf.data.AUTOTUNE)
-ds_test = ds_test.map(
-    reshape_img, num_parallel_calls=tf.data.AUTOTUNE)
-ds_test = ds_test.map(
-    normalize_img, num_parallel_calls=tf.data.AUTOTUNE)
-ds_test = ds_test.batch(8)
-ds_test = ds_test.cache()
-ds_test = ds_test.prefetch(tf.data.AUTOTUNE)
+ds_train = ds_train.batch(32)
+ds_test = ds_test.batch(32)
 
 model = keras.applications.MobileNetV2(
     input_shape=(224, 224, 3),
@@ -62,27 +54,80 @@ model = keras.applications.MobileNetV2(
     weights=None,
     input_tensor=None,
     pooling=None,
-    classes=2,
+    classes=101,
     classifier_activation='softmax'
 )
 
 # Compile the model
 model.compile(
-              optimizer=Adam(learning_rate=0.01),
+              optimizer=Adam(learning_rate=0.001),
               loss='sparse_categorical_crossentropy',  # Sparse since labels are not one-hot encoded
-              metrics=['accuracy'])
+              metrics=['accuracy']
+              )
 
-# Define early stopping callback
-early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+f.write(f'Starting Training\n')
+f.write(f'Start Time: {datetime.datetime.now()}\n')
 
 # Train the model
 history = model.fit(
     ds_train,
     validation_data=ds_test,
-    epochs=6
-    #callbacks=[early_stopping]
+    epochs=1
 )
+
+f.write(f'Starting Eval\n')
+f.write(f'Start Time: {datetime.datetime.now()}\n')
 
 # Evaluate the model on the test set
 test_loss, test_accuracy = model.evaluate(ds_test)
-print(f"Test Accuracy: {test_accuracy * 100:.2f}%")
+print(f"Test Accuracy: {test_accuracy * 100:.5f}%\n")
+f.write(f"Test Accuracy: {test_accuracy * 100:.5f}%\n")
+print(f"Test Loss: {test_loss:.5f}%\n")
+f.write(f"Test Loss: {test_loss:.5f}%\n")
+
+f.write(f'Starting Prediction\n')
+f.write(f'Start Time: {datetime.datetime.now()}\n')
+
+# Get model predictions
+y_true = np.concatenate([y for x, y in ds_test], axis=0)  # True labels from the test set
+y_pred = model.predict(ds_test)  # Predicted probabilities
+y_pred = np.argmax(y_pred, axis=1)  # Convert probabilities to class labels
+
+# Compute confusion matrix
+cm = confusion_matrix(y_true, y_pred)
+
+# Extract true positives, false positives, true negatives, and false negatives
+TP = np.diag(cm)  # Diagonal values represent true positives for each class
+FP = np.sum(cm, axis=0) - TP  # Column sum minus true positives gives false positives
+FN = np.sum(cm, axis=1) - TP  # Row sum minus true positives gives false negatives
+TN = np.sum(cm) - (FP + FN + TP)  # Total sum minus TP, FP, and FN gives true negatives
+
+print("Confusion Matrix:")
+f.write("Confusion Matrix:")
+print(cm)
+f.write(f'{cm}')
+f.write("\n")
+
+print(f"True Positives (TP) SUM: {sum(TP)}")
+f.write(f"True Positives (TP) SUM: {sum(TP)}\n")
+print(f"True Positives (TP): {TP}")
+f.write(f"True Positives (TP): {TP}\n")
+
+print(f"False Positives (FP) SUM: {sum(FP)}")
+f.write(f"False Positives (FP) SUM: {sum(FP)}\n")
+print(f"False Positives (FP): {FP}")
+f.write(f"False Positives (FP): {FP}\n")
+
+print(f"False Negatives (FN) SUM: {sum(FN)}")
+f.write(f"False Negatives (FN) SUM: {sum(FN)}\n")
+print(f"False Negatives (FN): {FN}")
+f.write(f"False Negatives (FN): {FN}\n")
+
+print(f"True Negatives (TN) SUM: {sum(TN)}")
+f.write(f"True Negatives (TN) SUM: {sum(TN)}\n")
+print(f"True Negatives (TN): {TN}")
+f.write(f"True Negatives (TN): {TN}\n")
+
+f.write(f'End Time: {datetime.datetime.now()}\n')
+
+f.close();

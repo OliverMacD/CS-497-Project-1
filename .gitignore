@@ -218,3 +218,6 @@ tensorflow/contrib/cmake/_build/
 
 # MNIST
 /MNIST
+
+# Detached Run
+nohup.out
