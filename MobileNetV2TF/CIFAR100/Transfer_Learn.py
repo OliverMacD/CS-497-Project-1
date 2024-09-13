@@ -186,9 +186,10 @@ if __name__ == '__main__':
         optimizer=Adam(learning_rate=LR),
         loss='categorical_crossentropy',
         metrics=[
-            Accuracy(),
-            Precision(),
-            Recall()
+            'accuracy',
+            'precision',
+            'recall',
+            'f1_score'
         ]
     )
 
