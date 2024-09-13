@@ -91,7 +91,7 @@ f.write(f'Start Time: {datetime.datetime.now()}\n')
 history = model.fit(
     ds_train,
     validation_data=ds_test,
-    epochs=1
+    epochs=50
 )
 
 f.write(f'Starting Eval\n')
