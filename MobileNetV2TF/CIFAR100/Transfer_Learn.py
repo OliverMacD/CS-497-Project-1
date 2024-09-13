@@ -191,11 +191,23 @@ if __name__ == '__main__':
         ]
     )
 
-    print("Training model")
+    print("Training Classifier")
     print(f'Start Time: {datetime.datetime.now()}\n')
     model.fit(ds_train, validation_data=ds_val, epochs=EPOCHS)
 
-    test_loss, test_acc = model.evaluate(ds_test)
+    test_loss, test_acc, test_f1, test_precision, test_cm = model.evaluate(ds_test)
+
+    print(f"Test accuracy: {test_acc}")
+    print(f"Test loss: {test_loss}")
+
+    print("Fine-tuning model")
+    for layer in model.layers[0].layers:
+        layer.trainable = True
+    model.summary()
+
+    model.fit(ds_train, validation_data=ds_val, epochs=EPOCHS)
+
+    test_loss, test_acc, test_f1, test_precision, test_cm = model.evaluate(ds_test)
 
     print(f"Test accuracy: {test_acc}")
     print(f"Test loss: {test_loss}")
