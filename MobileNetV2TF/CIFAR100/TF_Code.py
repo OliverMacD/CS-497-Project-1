@@ -78,9 +78,9 @@ ds_val = ds_val.map(resize_img)
 ds_test = ds_test.map(preprocess_mobilenet)
 ds_test = ds_test.map(resize_img)
 
-ds_train = ds_train.batch(32)
-ds_val = ds_val.batch(32)
-ds_test = ds_test.batch(32)
+ds_train = ds_train.batch(16)
+ds_val = ds_val.batch(16)
+ds_test = ds_test.batch(16)
 
 model = keras.applications.MobileNetV2(
     input_shape=(224, 224, 3),
@@ -107,7 +107,7 @@ f.write(f'Start Time: {datetime.datetime.now()}\n')
 history = model.fit(
     ds_train,
     validation_data=ds_val,
-    epochs=50
+    epochs=30
 )
 
 f.write(f'Starting Eval\n')
