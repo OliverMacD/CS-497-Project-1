@@ -71,10 +71,13 @@ def resize_img(image, label):
 
 ds_train = ds_train.map(preprocess_mobilenet)
 ds_train = ds_train.map(resize_img)
+ds_val = ds_val.map(preprocess_mobilenet)
+ds_val = ds_val.map(resize_img)
 ds_test = ds_test.map(preprocess_mobilenet)
 ds_test = ds_test.map(resize_img)
 
 ds_train = ds_train.batch(32)
+ds_val = ds_val.batch(32)
 ds_test = ds_test.batch(32)
 
 model = keras.applications.MobileNetV2(
