@@ -52,10 +52,12 @@ print("Loading dataset")
 train_size = int(len(ds_train_val)*0.8)
 
 print("Splitting dataset")
-ds_train_val = ds_train_val.shuffle(buffer_size=len(ds_train_val))
+shuffle_buffer_size = 10000
+ds_train_val = ds_train_val.shuffle(buffer_size=shuffle_buffer_size)
 ds_train = ds_train_val.take(train_size)
-ds_train = ds_train.shuffle(buffer_size=train_size)
+ds_train = ds_train.shuffle(buffer_size=min(shuffle_buffer_size, train_size))
 ds_val = ds_train_val.skip(train_size)
+ds_val = ds_val.shuffle(buffer_size=min(shuffle_buffer_size, len(ds_val)))
 
 # Preprocess the dataset
 print("Preprocessing dataset")
