@@ -1,22 +1,21 @@
 from typing import List, Tuple, Any
-import argparse
-import sys
+
 import os
+
+import argparse
+
+import datetime
 
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.metrics import Accuracy, F1Score, Precision, Recall
 
 import tensorflow_datasets as tfds
 
-import datetime
-
 import numpy as np
 
-from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
 
 
 gpus = tf.config.list_physical_devices('GPU')
