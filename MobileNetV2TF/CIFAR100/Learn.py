@@ -112,6 +112,8 @@ def plot_training_metrics(
 
     epochs_range = range(len(acc))
 
+    plt.title('Food101 Training Metrics')
+
     plt.figure(figsize=(12, 8))
     plt.subplot(1, 2, 1)
     plt.plot(epochs_range, acc, label='Training Accuracy')
