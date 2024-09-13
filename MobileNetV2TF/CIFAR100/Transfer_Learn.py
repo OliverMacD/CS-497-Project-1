@@ -2,6 +2,8 @@ from typing import List, Tuple, Any
 
 import os
 
+import logging
+
 import argparse
 
 import datetime
@@ -135,8 +137,64 @@ def one_hot_encode(image, label):
         label = tf.one_hot(label, depth=100)
         return image, label
 
+def plot_training_metrics(
+        history,
+        show: bool = False,
+        save: bool = False,
+        path: str = "",
+        name: str = "training_metrics.png"
+    ):
+    '''
+    Plot training metrics
+
+    :param history: The history object returned by model.fit()
+    :param show: Whether to show the plot
+    :param save: Whether to save the plot
+    :param path: The path to save the plot to
+    :param name: The name of the file to save the plot to
+
+    :return: None
+    '''
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs_range = range(len(acc))
+
+    plt.figure(figsize=(12, 8))
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs_range, acc, label='Training Accuracy')
+    plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend(loc='lower right')
+    plt.title('Training and Validation Accuracy')
+
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs_range, loss, label='Training Loss')
+    plt.plot(epochs_range, val_loss, label='Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend(loc='upper right')
+    plt.title('Training and Validation Loss')
+    
+    if save:
+        plt.savefig(os.path.join(path, name))
+    if show:
+        plt.show()
+
 
 if __name__ == '__main__':
+
+    try:
+        os.mkdir("Training_Results")
+    except:
+        pass
+    path = f"Training_Results/{datetime.datetime.now().date()}_{str(datetime.datetime.now().time()).split('.')[0].replace(':', '-')}"
+    os.mkdir(path)
+
+    logging.basicConfig(level=logging.INFO, filename=f'{path}/logs.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
     parser = argparse.ArgumentParser(description='Transfer Learning with MobileNetV2 on CIFAR-100')
     parser.add_argument('-b', '--batch', type=int, default=32, help='Batch size for training')
@@ -146,14 +204,17 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--save', type=str, default=None, help='Name of the model file to save')
     args = parser.parse_args()
 
+    logging.info("Arguments: %s", args)
+
     BATCH_SIZE = args.batch
     EPOCHS = args.epochs
     LR = args.lr
 
+    logging.info("Loading dataset Cifar100")
     datasets, ds_info = load_dataset('cifar100', ['train', 'test'])
-    # datasets, ds_info = load_dataset('food101', ['train', 'validation'])
     ds_train, ds_val, ds_test = datasets
 
+    logging.info("Preprocessing dataset")
     ds_train = ds_train.map(preprocess_mobilenet)
     ds_train = ds_train.map(resize_img)
     ds_val = ds_val.map(preprocess_mobilenet)
@@ -169,6 +230,7 @@ if __name__ == '__main__':
     ds_val = ds_val.batch(BATCH_SIZE)
     ds_test = ds_test.batch(BATCH_SIZE)
 
+    logging.info("Building model")
     model = None
     if args.file:
         model = load_model(args.file)
@@ -179,6 +241,7 @@ if __name__ == '__main__':
         raise ValueError("No model file provided")
 
     print("Compiling model")
+    logging.info("Compiling model")
     model.compile(
         optimizer=Adam(learning_rate=LR),
         loss='categorical_crossentropy',
@@ -192,17 +255,29 @@ if __name__ == '__main__':
 
     print("Training Classifier")
     print(f'Start Time: {datetime.datetime.now()}\n')
-    model.fit(ds_train, validation_data=ds_val, epochs=EPOCHS)
+    logging.info("Training classifier")
+    history = model.fit(ds_train, validation_data=ds_val, epochs=EPOCHS)
+
+    plot_training_metrics(history, save=True, name="training_metrics_classification.png", path=path)
 
     test_loss, test_acc, test_f1, test_precision, test_cm = model.evaluate(ds_test)
 
+    logging.info(f"Test accuracy: {test_acc}")
+    logging.info(f"Test loss: {test_loss}")
+    logging.info(f"Test F1 score: {test_f1}")
+    logging.info(f"Test precision: {test_precision}")
+    logging.info(f"Test confusion matrix saved to confusion_matrix.npy")
+    np.save(os.path.join(path, "confusion_matrix.npy"), test_cm)
     print(f"Test accuracy: {test_acc}")
     print(f"Test loss: {test_loss}")
 
     print("Fine-tuning model")
+    logging.info("Fine-tuning model")
     for layer in model.layers[0].layers:
         layer.trainable = True
     
+    print("Compiling model")
+    logging.info("Compiling model")
     model.compile(
         optimizer=Adam(learning_rate=LR/10),
         loss='categorical_crossentropy',
@@ -214,16 +289,28 @@ if __name__ == '__main__':
         ]
     )
 
-    model.fit(ds_train, validation_data=ds_val, epochs=EPOCHS)
+    print("Training model")
+    logging.info("Training model")
+    history = model.fit(ds_train, validation_data=ds_val, epochs=EPOCHS)
+
+    plot_training_metrics(history, save=True, name="training_metrics_fine_tuning.png", path=path)
 
     test_loss, test_acc, test_f1, test_precision, test_cm = model.evaluate(ds_test)
 
+    logging.info(f"Test accuracy: {test_acc}")
+    logging.info(f"Test loss: {test_loss}")
+    logging.info(f"Test F1 score: {test_f1}")
+    logging.info(f"Test precision: {test_precision}")
+    logging.info(f"Test confusion matrix saved to confusion_matrix.npy")
+    np.save(os.path.join(path, "confusion_matrix.npy"), test_cm)
     print(f"Test accuracy: {test_acc}")
     print(f"Test loss: {test_loss}")
 
     print("Saving model")
+    logging.info("Saving model")
     if args.save:
         save_model(model, name=args.save)
     else:
         save_model(model)
     print("Model saved")
+    logging.info("Model saved")
