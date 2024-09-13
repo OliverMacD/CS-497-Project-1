@@ -39,8 +39,9 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-# Load the MNIST dataset
-(ds_train, ds_test), ds_info = tfds.load(
+# Load the Food101 dataset
+print("Loading dataset")
+(ds_train_val, ds_test), ds_info = tfds.load(
     'food101',
     split=['train', 'validation'],
     shuffle_files=True,
@@ -48,6 +49,16 @@ if gpus:
     with_info=True,
 )
 
+train_size = int(len(ds_train_val)*0.8)
+
+print("Splitting dataset")
+ds_train_val = ds_train_val.shuffle(buffer_size=len(ds_train_val))
+ds_train = ds_train_val.take(train_size)
+ds_train = ds_train.shuffle(buffer_size=train_size)
+ds_val = ds_train_val.skip(train_size)
+
+# Preprocess the dataset
+print("Preprocessing dataset")
 preprocess_input = tf.keras.applications.mobilenet_v2.preprocess_input
 
 def preprocess_mobilenet(image, label):
@@ -90,7 +101,7 @@ f.write(f'Start Time: {datetime.datetime.now()}\n')
 # Train the model
 history = model.fit(
     ds_train,
-    validation_data=ds_test,
+    validation_data=ds_val,
     epochs=50
 )
 
