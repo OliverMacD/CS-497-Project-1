@@ -28,7 +28,7 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-def save_model(model, filepath: str = "", name: str | None = None):
+def save_model(model, filepath: str = "", name: str | None = None,):
     '''
     Save the model to a file
     
@@ -309,8 +309,8 @@ if __name__ == '__main__':
     print("Saving model")
     logging.info("Saving model")
     if args.save:
-        save_model(model, name=args.save)
+        save_model(model, filepath=path, name=args.save)
     else:
-        save_model(model)
+        save_model(model, filepath=path)
     print("Model saved")
     logging.info("Model saved")
