@@ -19,13 +19,13 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 
-# gpus = tf.config.list_physical_devices('GPU')
-# if gpus:
-#     try:
-#         for gpu in gpus:
-#             tf.config.experimental.set_memory_growth(gpu, True)
-#     except RuntimeError as e:
-#         print(e)
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
 
 def save_model(model, filepath: str = "", name: str | None = None):
     '''
@@ -66,14 +66,12 @@ def load_model(filepath: str) -> keras.Model:
         input_shape=(224, 224, 3),
         alpha=1.0,
         include_top=True,
-        weights=None,
+        weights='./tmp/tmp_weights.weights.h5',
         input_tensor=None,
         pooling=None,
         classes=101,
         classifier_activation='softmax'
     )
-
-    model.load_weights('./tmp/tmp_weights.weights.h5')
 
     os.remove('./tmp/tmp_weights.weights.h5')
     os.removedirs('./tmp')
