@@ -19,13 +19,13 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
+# gpus = tf.config.list_physical_devices('GPU')
+# if gpus:
+#     try:
+#         for gpu in gpus:
+#             tf.config.experimental.set_memory_growth(gpu, True)
+#     except RuntimeError as e:
+#         print(e)
 
 def save_model(model, filepath: str = "", name: str | None = None):
     '''
@@ -134,6 +134,10 @@ def preprocess_mobilenet(image, label):
 def resize_img(image, label):
     return tf.image.resize(image, (224, 224)), label
 
+def one_hot_encode(image, label):
+        label = tf.one_hot(label, depth=100)
+        return image, label
+
 
 if __name__ == '__main__':
 
@@ -160,6 +164,10 @@ if __name__ == '__main__':
     ds_test = ds_test.map(preprocess_mobilenet)
     ds_test = ds_test.map(resize_img)
 
+    ds_train = ds_train.map(one_hot_encode)
+    ds_val = ds_val.map(one_hot_encode)
+    ds_test = ds_test.map(one_hot_encode)
+
     ds_train = ds_train.batch(BATCH_SIZE)
     ds_val = ds_val.batch(BATCH_SIZE)
     ds_test = ds_test.batch(BATCH_SIZE)
@@ -176,7 +184,7 @@ if __name__ == '__main__':
     print("Compiling model")
     model.compile(
         optimizer=Adam(learning_rate=LR),
-        loss='sparse_categorical_crossentropy',
+        loss='categorical_crossentropy',
         metrics=[
             Accuracy(),
             Precision(),
