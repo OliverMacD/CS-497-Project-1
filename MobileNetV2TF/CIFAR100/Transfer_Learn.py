@@ -203,7 +203,17 @@ if __name__ == '__main__':
     print("Fine-tuning model")
     for layer in model.layers[0].layers:
         layer.trainable = True
-    model.summary()
+    
+    model.compile(
+        optimizer=Adam(learning_rate=LR/10),
+        loss='categorical_crossentropy',
+        metrics=[
+            'accuracy',
+            'precision',
+            'recall',
+            'f1_score'
+        ]
+    )
 
     model.fit(ds_train, validation_data=ds_val, epochs=EPOCHS)
 
