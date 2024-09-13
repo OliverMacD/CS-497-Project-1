@@ -136,7 +136,7 @@ if __name__ == '__main__':
         os.mkdir("Training_Results")
     except:
         pass
-    path = f"Training_Results/{datetime.datetime.now().date()}_{str(datetime.datetime.now().time()).replace(':', '-')}"
+    path = f"Training_Results/{datetime.datetime.now().date()}_{str(datetime.datetime.now().time()).split('.')[0].replace(':', '-')}"
     os.mkdir(path)
 
     logging.basicConfig(level=logging.INFO, filename=f'{path}/logs.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
